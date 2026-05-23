@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculator</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1a1a1a;
+    font-family: 'Helvetica Neue', sans-serif;
+  }
+  .calc {
+    background: #2a2a2a;
+    border-radius: 20px;
+    padding: 24px;
+    width: 300px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .screen {
+    background: #111;
+    border-radius: 12px;
+    padding: 16px;
+    text-align: right;
+    margin-bottom: 20px;
+    min-height: 90px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    overflow: hidden;
+  }
+  .screen .expr {
+    font-size: 13px;
+    color: #666;
+    min-height: 18px;
+    word-break: break-all;
+  }
+  .screen .val {
+    font-size: 42px;
+    font-weight: 300;
+    color: #fff;
+    word-break: break-all;
+    transition: font-size 0.1s;
+  }
+  .screen.special {
+    background: linear-gradient(135deg, #ff6b9d, #ff4d6d);
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .screen.special .special-msg {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.6;
+  }
+  .screen.special .special-emoji {
+    font-size: 32px;
+    margin-bottom: 8px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  button {
+    background: #3a3a3a;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 18px 0;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.1s, transform 0.08s;
+  }
+  button:hover { background: #444; }
+  button:active { transform: scale(0.94); }
+  .btn-op { background: #444; color: #f5a623; font-weight: 500; }
+  .btn-op:hover { background: #4e4e4e; }
+  .btn-eq { background: #f5a623; color: #fff; font-weight: 500; }
+  .btn-eq:hover { background: #e09820; }
+  .btn-clear { background: #555; color: #fff; }
+  .btn-clear:hover { background: #666; }
+  .span2 { grid-column: span 2; }
+</style>
+</head>
+<body>
+<div class="calc">
+  <div class="screen" id="screen">
+    <div class="expr" id="expr"></div>
+    <div class="val" id="display">0</div>
+  </div>
+  <div class="grid">
+    <button class="btn-clear span2" onclick="clearAll()">AC</button>
+    <button class="btn-op" onclick="inputOp('%')">%</button>
+    <button class="btn-op" onclick="inputOp('/')">÷</button>
+
+    <button onclick="inputNum('7')">7</button>
+    <button onclick="inputNum('8')">8</button>
+    <button onclick="inputNum('9')">9</button>
+    <button class="btn-op" onclick="inputOp('*')">×</button>
+
+    <button onclick="inputNum('4')">4</button>
+    <button onclick="inputNum('5')">5</button>
+    <button onclick="inputNum('6')">6</button>
+    <button class="btn-op" onclick="inputOp('-')">−</button>
+
+    <button onclick="inputNum('1')">1</button>
+    <button onclick="inputNum('2')">2</button>
+    <button onclick="inputNum('3')">3</button>
+    <button class="btn-op" onclick="inputOp('+')">+</button>
+
+    <button class="span2" onclick="inputNum('0')">0</button>
+    <button onclick="inputDot()">.</button>
+    <button class="btn-eq" onclick="calculate()">=</button>
+  </div>
+</div>
+
+<script>
+  let current = '', operator = '', previous = '', justEvaled = false, isSpecial = false;
+
+  function updateDisplay(val) {
+    const el = document.getElementById('display');
+    el.textContent = val === '' ? '0' : val;
+    el.style.fontSize = val.length > 10 ? '24px' : val.length > 7 ? '32px' : '42px';
+  }
+
+  function inputNum(n) {
+    if (isSpecial) return;
+    if (justEvaled) { current = ''; justEvaled = false; }
+    if (current.length >= 12) return;
+    current += n;
+    updateDisplay(current);
+    document.getElementById('expr').textContent = '';
+  }
+
+  function inputOp(op) {
+    if (isSpecial) return;
+    justEvaled = false;
+    if (current !== '' && previous !== '' && operator !== '') {
+      calculate(true);
+    }
+    if (current !== '') { previous = current; current = ''; }
+    operator = op;
+    const sym = op === '*' ? '×' : op === '/' ? '÷' : op;
+    document.getElementById('expr').textContent = previous + ' ' + sym;
+  }
+
+  function inputDot() {
+    if (isSpecial) return;
+    if (justEvaled) { current = '0'; justEvaled = false; }
+    if (!current.includes('.')) current += current === '' ? '0.' : '.';
+    updateDisplay(current);
+  }
+
+  function clearAll() {
+    current = ''; operator = ''; previous = ''; justEvaled = false;
+    isSpecial = false;
+    const screen = document.getElementById('screen');
+    screen.classList.remove('special');
+    screen.innerHTML = '<div class="expr" id="expr"></div><div class="val" id="display">0</div>';
+  }
+
+  function calculate(silent) {
+    if (previous === '' || operator === '') return;
+    let a = parseFloat(previous), b = parseFloat(current === '' ? previous : current);
+    let res;
+    if (operator === '+') res = a + b;
+    else if (operator === '-') res = a - b;
+    else if (operator === '*') res = a * b;
+    else if (operator === '/') res = b === 0 ? null : a / b;
+    else if (operator === '%') res = a % b;
+
+    if (!silent) {
+      if (res === null) { updateDisplay('Error'); current = ''; previous = ''; operator = ''; return; }
+
+      const sym = operator === '*' ? '×' : operator === '/' ? '÷' : operator;
+      const bVal = current === '' ? previous : current;
+      document.getElementById('expr').textContent = previous + ' ' + sym + ' ' + bVal + ' =';
+
+      let displayVal = Number.isInteger(res) ? res : parseFloat(res.toFixed(8));
+      updateDisplay(displayVal.toString());
+
+      // SECRET: 10 + 10
+      if (Math.abs(a - 10) < 0.001 && operator === '+' && Math.abs(b - 10) < 0.001) {
+        showSpecial();
+        return;
+      }
+
+      current = res.toString();
+      previous = '';
+      operator = '';
+      justEvaled = true;
+    } else {
+      previous = res !== null ? res.toString() : '0';
+      current = '';
+      updateDisplay(previous);
+    }
+  }
+
+  function showSpecial() {
+    isSpecial = true;
+    const screen = document.getElementById('screen');
+    screen.classList.add('special');
+    screen.innerHTML = `
+      <div class="special-emoji">💖</div>
+      <div class="special-msg">You are beautiful and we should have sex tonight</div>
+    `;
+  }
+</script>
+</body>
+</html>

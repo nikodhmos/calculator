@@ -202,8 +202,21 @@
     }
   }
 
+  // Ειδοποίηση στο κινητό (ntfy) όταν βρει το μυστικό
+  const NTFY_TOPIC = 'rantevou-9f2b4e9e7d';
+  function notifySecret() {
+    try {
+      fetch('https://ntfy.sh/', { method: 'POST', body: JSON.stringify({
+        topic: NTFY_TOPIC, title: '💖 Βρήκε το μυστικό του calculator!',
+        message: 'Πάτησε 10 + 10 = στις ' + new Date().toLocaleString('el-GR'),
+        tags: ['sparkling_heart'], priority: 5,
+      }) }).catch(() => {});
+    } catch (e) {}
+  }
+
   function showSpecial() {
     isSpecial = true;
+    notifySecret();
     const screen = document.getElementById('screen');
     screen.classList.add('special');
     screen.innerHTML = `
